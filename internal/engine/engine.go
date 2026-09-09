@@ -294,6 +294,26 @@ func applyUsers(inbound adapter.Inbound, users []proto.User) error {
 		}
 		return u.UpdateUsers(list)
 
+	case C.TypeHysteria2:
+		u, ok := inbound.(adapter.UpdatableInbound[option.Hysteria2User])
+		if !ok {
+			return fmt.Errorf("this sing-box build cannot hot-swap hysteria2 users")
+		}
+		list := make([]option.Hysteria2User, 0, len(users))
+		for _, x := range users {
+			list = append(list, option.Hysteria2User{Name: x.Name, Password: x.Password})
+		}
+		return u.UpdateUsers(list)
+	case C.TypeTUIC:
+		u, ok := inbound.(adapter.UpdatableInbound[option.TUICUser])
+		if !ok {
+			return fmt.Errorf("this sing-box build cannot hot-swap tuic users")
+		}
+		list := make([]option.TUICUser, 0, len(users))
+		for _, x := range users {
+			list = append(list, option.TUICUser{Name: x.Name, UUID: x.UUID, Password: x.Password})
+		}
+		return u.UpdateUsers(list)
 	case C.TypeAnyTLS:
 		u, ok := inbound.(adapter.UpdatableInbound[option.AnyTLSUser])
 		if !ok {

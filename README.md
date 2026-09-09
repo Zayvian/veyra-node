@@ -1,6 +1,15 @@
+# skysbx-node · zayvian-lee 二次开发版
+
+基于 [kosje/skysbx-node](https://github.com/kosje/skysbx-node)，保留 GPL-3.0 许可证与历史。
+
+新增 Hysteria2/TUIC v5 用户热更新、QUIC 会话撤销与 Hysteria2 跳端口支持。
+构建需要配套的 [zayvian-lee/skysbx-core](https://github.com/zayvian-lee/skysbx-core)，详见 [FORK.md](FORK.md)。
+
+---
+
 # skysbx-node
 
-skysbx 的数据面：内嵌 sing-box，由 [`skysbx-panel`](https://github.com/kosje/skysbx-panel)
+skysbx 的数据面：内嵌 sing-box，由 [`skysbx-panel`](https://github.com/zayvian-lee/skysbx-panel)
 驱动。
 
 **没有配置文件，没有监听的控制端口。** 只需要面板地址和一个 token；服务什么、给谁服务、
@@ -40,13 +49,13 @@ skysbx 的数据面：内嵌 sing-box，由 [`skysbx-panel`](https://github.com/
 先在面板里 **节点 → 新增**，复制那个只显示一次的接入 token，然后在这台服务器上：
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/kosje/skysbx-node/main/install.sh | sh
+wget -qO- https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | sh
 ```
 
 它会问面板地址和 token。带参数要加 `-s --`：
 
 ```bash
-N=https://raw.githubusercontent.com/kosje/skysbx-node/main/install.sh
+N=https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh
 
 wget -qO- $N | sh -s -- --panel https://panel.example.com --token <token>
 wget -qO- $N | sh -s -- --version      # 节点版本 + 内嵌的 sing-box 版本
@@ -58,7 +67,7 @@ wget -qO- $N | sh -s -- --purge        # 连证书、构建缓存、脚本装的
 `--upgrade` 不需要任何参数：面板地址和 token 从 `/opt/skysbx/node.env` 读回来。
 
 **sing-box 核心怎么升级：** 核心是编进这个二进制里的，所以 `--upgrade` 重新构建一次
-就是升级 —— 它会重新拉 [`skysbx-core`](https://github.com/kosje/skysbx-core) 再编。
+就是升级 —— 它会重新拉 [`skysbx-core`](https://github.com/zayvian-lee/skysbx-core) 再编。
 没有单独的核心版本要管，也没有第二个进程要重启。
 
 `--domain` 是可选的：只有 AnyTLS 需要证书，Reality 用自己的密钥对认证、Shadowsocks
@@ -96,7 +105,7 @@ GOTOOLCHAIN=go1.26.5 CGO_ENABLED=0 go build -trimpath \
 go test -tags 'with_clash_api,with_v2ray_api,with_utls,with_acme,with_quic' ./...
 ```
 
-`go.mod` 里的 `replace` 指向 [`skysbx-core`](https://github.com/kosje/skysbx-core)，
+`go.mod` 里的 `replace` 指向 [`skysbx-core`](https://github.com/zayvian-lee/skysbx-core)，
 带热插拔补丁的 sing-box 分支。
 
 ```

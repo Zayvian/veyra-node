@@ -1,7 +1,7 @@
 #!/bin/sh
 # One-line installer for a skysbx node.
 #
-#   wget -qO- https://raw.githubusercontent.com/kosje/skysbx-node/main/install.sh | sh
+#   wget -qO- https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | sh
 #
 # It will ask for the panel URL and the join token. Arguments go through to
 # deploy/install-node.sh after `-s --`:
@@ -16,8 +16,8 @@
 # in deploy/install-node.sh, which is worth reading before running either.
 set -eu
 
-REPO=${SKYSBX_REPO:-https://github.com/kosje/skysbx-node.git}
-FORK=${SKYSBX_FORK:-https://github.com/kosje/skysbx-core.git}
+REPO=${SKYSBX_REPO:-https://github.com/zayvian-lee/skysbx-node.git}
+FORK=${SKYSBX_FORK:-https://github.com/zayvian-lee/skysbx-core.git}
 REF=${SKYSBX_REF:-main}
 
 RED=$(printf '\033[31m'); GRN=$(printf '\033[32m'); RST=$(printf '\033[0m')

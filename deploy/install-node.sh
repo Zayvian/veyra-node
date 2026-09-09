@@ -16,7 +16,7 @@ SKIP_CERT=0
 SRC_DIR=""
 FORK_DIR=""
 GH_TOKEN=${GITHUB_TOKEN:-}
-GH_OWNER=${SKYSBX_GH_OWNER:-kosje}
+GH_OWNER=${SKYSBX_GH_OWNER:-zayvian-lee}
 REF=${SKYSBX_REF:-main}
 
 RED=$'\e[31m'; GRN=$'\e[32m'; YLW=$'\e[33m'; BLD=$'\e[1m'; RST=$'\e[0m'
@@ -205,6 +205,7 @@ fi
 say "preflight"
 [ "$(id -u)" = 0 ] || die "run as root"
 
+command -v nft >/dev/null || { apt-get update -qq && apt-get install -y -qq nftables; }
 command -v curl >/dev/null || { apt-get update -qq && apt-get install -y -qq curl; }
 for p in git dig; do
     command -v "$p" >/dev/null || apt-get install -y -qq git dnsutils

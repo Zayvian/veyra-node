@@ -186,3 +186,5 @@ require (
 // user set once and never exposes a way to change it. Point this at a published
 // module before release.
 replace github.com/sagernet/sing-box => ../skysbx-core
+
+replace github.com/sagernet/sing-quic => ../skysbx-core/third_party/sing-quic

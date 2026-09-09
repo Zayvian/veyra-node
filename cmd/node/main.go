@@ -18,6 +18,7 @@ import (
 
 	"github.com/kosje/skysbx-node/internal/engine"
 	"github.com/kosje/skysbx-node/internal/link"
+	"github.com/sagernet/sing-box/common/porthop"
 )
 
 // version is stamped at build time with -ldflags "-X main.version=...".
@@ -69,6 +70,10 @@ func main() {
 	defer stop()
 
 	log.Info("starting", "version", version, "sing-box", eng.SingboxVersion(), "panel", *panelURL)
+	if err := porthop.CleanupStale(); err != nil {
+		log.Error("clean up stale hopping rules", "error", err)
+		os.Exit(1)
+	}
 
 	// Run only returns when the context is cancelled; every network failure in
 	// between is its own business.
