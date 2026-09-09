@@ -1,160 +1,178 @@
-# skysbx-node · zayvian-lee 二次开发版
-
-基于 [kosje/skysbx-node](https://github.com/kosje/skysbx-node)，保留 GPL-3.0 许可证与历史。
-
-新增 Hysteria2/TUIC v5 用户热更新、QUIC 会话撤销与 Hysteria2 跳端口支持。
-构建需要配套的 [zayvian-lee/skysbx-core](https://github.com/zayvian-lee/skysbx-core)，详见 [FORK.md](FORK.md)。
-
----
-
 # skysbx-node
 
-skysbx 的数据面：内嵌 sing-box，由 [`skysbx-panel`](https://github.com/zayvian-lee/skysbx-panel)
-驱动。
+由 **zayvian-lee** 维护的 skysbx 节点程序。每台代理服务器安装一份，主动连接面板，接收配置、更新用户、运行代理并上报流量。
 
-**没有配置文件，没有监听的控制端口。** 只需要面板地址和一个 token；服务什么、给谁服务、
-拦什么，全部由面板决定。
+[![Node CI](https://github.com/zayvian-lee/skysbx-node/actions/workflows/ci.yml/badge.svg)](https://github.com/zayvian-lee/skysbx-node/actions/workflows/ci.yml)
 
-## 它做什么
+**新用户先安装 [skysbx-panel](https://github.com/zayvian-lee/skysbx-panel)，再按本页安装节点。** [skysbx-core](https://github.com/zayvian-lee/skysbx-core) 已编译进节点，不单独启动或安装。
 
-启动后主动连面板，然后：
+## 功能与部署条件
 
-| 收到 | 做什么 |
-|---|---|
-| `config` | 应用 sing-box 配置（重建监听器，会断连）。失败则**回滚到上一份**并把原因报回去 |
-| `users` | 热插拔用户 —— 不重启监听器、不断开现有连接，同时刷新计费白名单和 IP 上限 |
-| `ping` | 回 `pong` |
+支持 VLESS Reality、AnyTLS、Shadowsocks 2022、Hysteria2、TUIC v5；支持用户热更新、上传/下载统计和会话撤销。Hysteria2 支持 Linux UDP 跳端口；TUIC 当前固定端口。
 
-主动上报：
+默认安装器使用 Debian / Ubuntu、systemd 和 root 权限。通过 Docker 编译程序，安装后由 systemd 直接运行。需要访问 GitHub、Go 依赖和 Docker 镜像源。每台主机运行一个受管理的节点实例。
 
-| 每隔 | 内容 |
-|---|---|
-| 30s | 流量**增量**（不是累计值，节点重启不会让用量倒退）+ CPU / 内存 / 运行时长 |
-| 30s | 在线用户、每人的来源地址数、用量形状（连接数 / 对端数 / 端口数） |
-| 5s | 检查每用户同时在线地址数，超出上限的地址直接断开 |
-| 每次 apply 后 | 当前真正在跑的入站 tag 列表，以及配置被拒的原因 |
+- 节点能访问面板的 HTTPS 地址；不额外开放控制端口。
+- 节点域名指向本机，使用直连 DNS，Cloudflare 为灰云。
+- 默认节点证书签发需要可达且空闲的 TCP 80；不能提供时看「证书选项」。
+- 代理端口同时在云安全组和本机防火墙放行。
+- 面板、节点同机时请使用 [同机安装流程](https://github.com/zayvian-lee/skysbx-panel#6-面板与节点同机安装)，避免与面板抢占 80/443。
 
-最后一条是面板「已生效 / 未生效」那个状态的来源。节点拒绝一份配置之后仍在跑上一份，
-面板这边入站照样显示启用，唯一的症状是客户端连不上那一个端口 —— 所以入站列表由节点
-直接给出，而不是从错误消息里反解 tag。
+## 1. 从面板取得 token
 
-支持三个协议：**VLESS + Reality + XTLS-Vision**、**AnyTLS**、**Shadowsocks 2022**。
-只有 AnyTLS 需要证书。
+登录面板，进入「节点 → 新建」：
 
-节点还可能替**别的节点**开一个 L4 转发口（面板里的「站内中转」）—— 那只是配置里多一个
-`direct` 入站，纯字节转发，不解密也不认证。节点这边没有任何特殊处理。
+| 字段 | 示例 |
+| --- | --- |
+| 名称 | 香港无限流量 |
+| 客户端连接地址 | `hk.example.com`，不带协议前缀 |
+| 国家 | `HK` |
+| 流量倍率 | `1` 正常，`0.1` 十分之一，`0` 不扣套餐 |
 
-## 安装
+复制创建后只显示一次的接入 token。它属于这台节点，不是用户的订阅 token，不要公开。
 
-先在面板里 **节点 → 新增**，复制那个只显示一次的接入 token，然后在这台服务器上：
+## 2. 安装节点
+
+在**节点服务器的 SSH 终端**运行 `sudo -i`，再执行，替换域名和邮箱：
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | sh
+apt-get update && apt-get install -y curl
+curl -fL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh -o /tmp/skysbx-node-install.sh
+sh /tmp/skysbx-node-install.sh \
+  --panel https://panel.example.com \
+  --domain hk.example.com \
+  --email you@example.com
 ```
 
-它会问面板地址和 token。带参数要加 `-s --`：
+安装程序提示 token 时粘贴。程序拉取节点与配套 core 源码，使用 Go 1.26.5 构建，签发证书并启动服务。普通使用者不用手动安装 Go 或单独克隆 core。
+
+**AnyTLS、Hysteria2、TUIC 都需要证书**。只使用 Reality / Shadowsocks 时可省略 `--domain`，交互提示域名时直接回车。安装器允许证书失败后继续启动，所以服务在线不能代替证书检查。
 
 ```bash
-N=https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh
-
-wget -qO- $N | sh -s -- --panel https://panel.example.com --token <token>
-wget -qO- $N | sh -s -- --version      # 节点版本 + 内嵌的 sing-box 版本
-wget -qO- $N | sh -s -- --upgrade      # 重新构建并重启，含 sing-box 核心升级
-wget -qO- $N | sh -s -- --uninstall    # 卸载服务，保留证书和 node.env
-wget -qO- $N | sh -s -- --purge        # 连证书、构建缓存、脚本装的 Docker 一起清掉
+systemctl is-active skysbx-node
+journalctl -u skysbx-node -n 50 --no-pager
+# 使用 TLS 协议时还要检查：
+ls -l /opt/skysbx/cert.pem /opt/skysbx/key.pem
 ```
 
-`--upgrade` 不需要任何参数：面板地址和 token 从 `/opt/skysbx/node.env` 读回来。
+回面板确认节点「在线」。此时还未配置代理端口，继续下一步。
 
-**sing-box 核心怎么升级：** 核心是编进这个二进制里的，所以 `--upgrade` 重新构建一次
-就是升级 —— 它会重新拉 [`skysbx-core`](https://github.com/zayvian-lee/skysbx-core) 再编。
-没有单独的核心版本要管，也没有第二个进程要重启。
+## 3. 添加入站并导入订阅
 
-`--domain` 是可选的：只有 AnyTLS 需要证书，Reality 用自己的密钥对认证、Shadowsocks
-没有 TLS 层，所以没证书的节点照样服务另外两个协议。给了域名脚本就用 certbot 签
-（`--cf-token` 可走 DNS-01），证书写到 `/opt/skysbx/cert.pem` 和 `key.pem`，面板里
-AnyTLS 入站默认就指这两个路径。
+在面板中点击该节点的「入站」，选择协议、填写唯一名称和端口：
 
-> 节点域名必须是 **DNS-only（灰云）**。三个协议都不是 HTTP，套 CDN 会全部失效。
+| 协议 | 示例端口 | 必要设置 |
+| --- | --- | --- |
+| VLESS Reality | TCP 443 | Reality 握手站点；密钥自动生成 |
+| AnyTLS | TCP 8443 | 证书、私钥、SNI |
+| Shadowsocks 2022 | TCP / UDP 8388 | 密钥自动生成 |
+| Hysteria2 | UDP 8443 | 证书、SNI；可选跳跃范围 |
+| TUIC v5 | UDP 9443 | 证书、SNI；当前无自动跳端口 |
 
-直接跑：
+证书默认 `/opt/skysbx/cert.pem`，私钥默认 `/opt/skysbx/key.pem`，SNI 填匹配的节点域名。普通直连时中转设置留空。放行实际配置的 TCP / UDP 端口，不要把示例端口当成固定要求。
+
+tag 是导出的入站名称，支持中文，例如「香港下载 01」。保存后确认生效；再在面板创建用户、分配入站、复制订阅并导入客户端。完整客户端与套餐操作见 [面板 README](https://github.com/zayvian-lee/skysbx-panel#5-用户倍率和订阅)。
+
+### HY2 跳端口示例
+
+监听 `8443`、范围 `20000-30000`、间隔 `30s`。云安全组放行 UDP 8443 与 UDP 20000–30000，本机 INPUT 防火墙允许实际监听 UDP 8443。安装器提供 nftables 依赖和所需 systemd 能力；规则负责把范围重定向到监听端口，不代替防火墙放行。
+
+仅支持直连 Linux 节点，不与中转同时使用。节点清理的专用表命名为 `skysbx_hop_<16位十六进制>`；不要把自己的防火墙表命名成这个格式。清空面板跳跃范围可关闭，节点退出/重启会清理所属规则。
+
+## 证书选项
+
+### 默认 HTTP 验证
+
+使用安装命令的 `--domain` 和 `--email`，节点 TCP 80 对公网开放且空闲。安装器配置 certbot 续签和证书复制钩子，证书更新时重启节点加载，会短暂中断连接。
+
+### Cloudflare DNS 验证
+
+域名由 Cloudflare 管理且 TCP 80 不可用时，准备仅能编辑该域名 DNS 的 API token，在 root Bash 中交互读取：
 
 ```bash
-skysbx-node -panel https://panel.example.com -token <token>
-# 或用环境变量，避免 token 出现在命令行里
-SKYSBX_PANEL=... SKYSBX_TOKEN=... skysbx-node
+read -rsp 'Cloudflare DNS API token: ' cf_token; printf '\n'
+sh /tmp/skysbx-node-install.sh \
+  --panel https://panel.example.com --domain hk.example.com \
+  --email you@example.com --cf-token "$cf_token"
+unset cf_token
 ```
 
-## 构建
+安装程序仍会提示节点接入 token。DNS 验证不等于开启 CDN，代理记录仍应灰云。Cloudflare 凭据保存在 `/etc/letsencrypt/cloudflare.ini`，不要公开；`--cf-token` 在运行期间作为进程参数传入，应在受信任的主机上执行。
+
+### 已有证书
+
+确认完整证书链和私钥匹配，安装到默认路径：
 
 ```bash
-GOTOOLCHAIN=go1.26.5 CGO_ENABLED=0 go build -trimpath \
+install -d -m 0700 /opt/skysbx
+install -m 0644 /你的路径/fullchain.pem /opt/skysbx/cert.pem
+install -m 0600 /你的路径/privkey.pem /opt/skysbx/key.pem
+sh /tmp/skysbx-node-install.sh --panel https://panel.example.com \
+  --domain hk.example.com --no-cert
+```
+
+自行管理证书续签与重新加载。入站 SNI 与证书一致。面板同机使用共享证书时，按同机流程操作，不能用这段命令随意覆盖共享链接。
+
+## 4. 更新节点与内核
+
+先 [备份当前数据、证书和程序](https://github.com/zayvian-lee/skysbx-panel/blob/main/docs/BACKUP.md)，再在每台节点执行：
+
+```bash
+curl -fL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh -o /tmp/skysbx-node-install.sh
+sh /tmp/skysbx-node-install.sh --upgrade
+```
+
+更新从 `/opt/skysbx/node.env` 读取面板地址、token，不必重新登记节点。它会同时拉取配套内核并重新编译，保留证书，不重复签发。更新会重启节点，建议逐台进行。
+
+旧版迁移：先更新面板、再更新节点、最后使用新协议。若曾设置其他下载源环境变量，可显式指定：
+
+```bash
+SKYSBX_REPO=https://github.com/zayvian-lee/skysbx-node.git \
+SKYSBX_FORK=https://github.com/zayvian-lee/skysbx-core.git \
+SKYSBX_GH_OWNER=zayvian-lee SKYSBX_REF=main \
+sh /tmp/skysbx-node-install.sh --upgrade
+```
+
+自定义目录在每次操作加 `SKYSBX_ROOT=实际目录`；手工或容器部署不要直接覆盖原 unit。`node.env` 丢失要先恢复；证书缺失不会因 `--upgrade` 自动补签。更多迁移、回退和 token 替换见 [维护说明](https://github.com/zayvian-lee/skysbx-panel/blob/main/docs/UPGRADE.md)。
+
+## 5. 日常管理与卸载
+
+```bash
+/opt/skysbx/skysbx-node --version
+systemctl status skysbx-node --no-pager
+journalctl -u skysbx-node -n 100 --no-pager
+systemctl restart skysbx-node
+```
+
+| 问题 | 检查 |
+| --- | --- |
+| 离线 | 面板 HTTPS 可达性、node.env 的地址和 token、日志 |
+| 在线但入站未生效 | 端口冲突、证书、SNI、是否使用匹配的内核 |
+| HY2 / TUIC 连接失败 | UDP 规则、证书有效期、客户端支持；HY2 再看 nftables |
+| 下载仍扣很多额度 | 面板节点倍率是否保存、客户端是否确实选了这个节点 |
+| 升级失败 | 失败发生在下载、编译还是启动；保留日志，不删除数据 |
+
+`--uninstall` 删除服务和程序，保留 `node.env`、证书；可以 `--upgrade` 重装。`--purge` 会删除数据、证书及相关依赖，不是更新或回退步骤。同机部署共享目录和 Docker，清理前必须确认影响。
+
+## 开发者构建
+
+普通用户使用上面的安装器。开发者需把节点和 core 克隆为同级目录：
+
+```bash
+git clone https://github.com/zayvian-lee/skysbx-node.git
+git clone https://github.com/zayvian-lee/skysbx-core.git
+cd skysbx-node
+# 使用 Go 1.26.5；-race 检测还需要 C 编译器
+go test -race -tags 'with_clash_api,with_v2ray_api,with_utls,with_acme,with_quic' ./...
+CGO_ENABLED=0 go build -trimpath \
   -tags 'with_clash_api,with_v2ray_api,with_utls,with_acme,with_quic' \
-  -ldflags '-s -w -X main.version=$VER -X github.com/sagernet/sing-box/constant.Version=1.14.0' \
-  ./cmd/node
+  -o skysbx-node ./cmd/node
 ```
 
-两点不可省：
+保留 go.mod 中 core 和 sing-quic 的本地 replace 指令；省略构建标签可能导致功能缺失。不要随意把配套 core 替换为其他内核版本。
 
-- **build tags** —— 缺了能编译，但启动时报 `clash api is not included in this build`
-- **Go 1.26.x** —— 1.27 链接失败（sing-box 用 `go:linkname` 访问 http2 未导出字段）
+## 项目维护
 
-测试同样要带 tags —— `internal/engine` 的测试会真的起 sing-box：
+[提交问题](https://github.com/zayvian-lee/skysbx-node/issues)时附程序版本、协议、部署方式和脱敏日志。测试覆盖真实 QUIC 连接、用户热更新、撤销、流量归属与 Linux 构建；实际服务器证书/网络需自行验收。
 
-```bash
-go test -tags 'with_clash_api,with_v2ray_api,with_utls,with_acme,with_quic' ./...
-```
-
-`go.mod` 里的 `replace` 指向 [`skysbx-core`](https://github.com/zayvian-lee/skysbx-core)，
-带热插拔补丁的 sing-box 分支。
-
-```
-cmd/node/           入口
-internal/
-  link/             连面板的 WebSocket 客户端，含重连与上报节拍
-  engine/           内嵌 sing-box：应用配置、热插拔、统计、IP 限制
-  proto/            控制协议的线格式类型
-```
-
-`internal/proto/` 的结构体是重新定义的，不从面板 import —— 两者之间的契约是线格式，
-不是共享的 Go 包。
-
-## 由节点决定、而非面板决定的事
-
-三处刻意不让面板管，因为它们是「怎么跑 sing-box」的细节：
-
-- **本地 API 端口**（clash_api / v2ray_api）由节点向内核要空闲端口。写死会让同机两个
-  节点撞车。
-
-- **Shadowsocks 占位用户**。sing-box 在构造时按 `len(users)` 决定建单用户还是多用户
-  监听器，而单用户那个类型**根本没有**更新用户的方法 —— 建成那样之后所有热添加静默
-  失效。面板按设计发空列表（用户走独立消息才能热插拔），所以节点在应用前补一个随机
-  密钥的占位用户。单用户模式还有个更糟的后果：配置里的共享密码本身就是完整凭据，不
-  属于任何用户，那部分流量不计入任何人。
-
-- **配置回滚**。先构造新实例，成功了才停旧的、启新的。构造失败不花任何代价；**启动**
-  失败则旧实例已经没了，一个打错的端口会让整台节点上所有入站下线，直到某次无关的编辑
-  碰巧推了新配置。所以启动失败时节点自己滚回上一份配置，并把失败原因报上去。
-
-## IP 限制
-
-面板给出每用户「同时在线的不同来源地址数」上限，节点执行。
-
-数的是**地址**不是连接 —— 一台机器就会开几十条连接。判定在节点上做，因为连接在这里：
-面板最晚 30 秒才知道，而且它唯一的手段是吊销整个账号，那会把付费的那个人一起踢下线。
-
-- 每 5 秒从自己的 clash API 拉一次连接列表，超出的地址直接断开。
-- 保住位置的是**最早出现**的那些地址，跨轮稳定，不会两台设备互相把对方踢掉。
-- 一个地址在最后一条连接关闭后还保留 **5 分钟**位置，否则短暂空闲就会把位置让给下一个
-  连上来的人。
-
-已知边界：5 秒一轮，完全发生在两轮之间的突发看不见；限制按节点各自执行。
-
-## 许可
-
-**GPL-3.0**，见 [`LICENSE`](LICENSE)。
-
-另见 [`NOTICE`](NOTICE)：**本项目与 sing-box 官方无关联、未获其背书**，请勿向他们报告
-本项目的问题。
-
-面板是独立的程序，不链接这里的任何代码，许可单独适用（AGPL-3.0）。
+许可证与来源见 [LICENSE](LICENSE)、[NOTICE](NOTICE)。

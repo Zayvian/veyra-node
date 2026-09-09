@@ -1,11 +1,9 @@
-# zayvian-lee node fork
+# 文档入口
 
-Based on https://github.com/kosje/skysbx-node. Original GPL-3.0 license and history retained.
+安装、证书、节点接入、更新和开发构建已整合到 [README](README.md)。
 
-This version adds Hysteria2 and TUIC v5 hot user updates, uses the companion patched QUIC module, and installs nftables for optional Hysteria2 port hopping. Startup removes only stale tables in the reserved `skysbx_hop_<16 hex digits>` namespace. Run one managed node daemon per host.
+- [完整面板到客户端流程](https://github.com/zayvian-lee/skysbx-panel)
+- [旧版迁移](https://github.com/zayvian-lee/skysbx-panel/blob/main/docs/UPGRADE.md)
+- [许可证与来源](NOTICE)
 
-Clone `skysbx-node` and https://github.com/zayvian-lee/skysbx-core side by side. Both replace directives in go.mod are required. The installer fetches zayvian-lee's repositories by default.
-
-Build/test tags: `with_clash_api,with_v2ray_api,with_utls,with_acme,with_quic`. Linux deployment uses Go 1.26.5. Run `go test -race -tags 'with_clash_api,with_v2ray_api,with_utls,with_acme,with_quic' ./...`.
-
-Usage, subscription formats and deployment notes: https://github.com/zayvian-lee/skysbx-panel/blob/main/docs/FORK.md
+保留此文件兼容既有链接。

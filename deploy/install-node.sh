@@ -49,10 +49,9 @@ Install options
   --panel <url>     Panel base URL, e.g. https://panel.example.com
   --token <token>   Join token, shown once when the node was added in the panel.
 
-  --domain <fqdn>   This node's own domain. Only AnyTLS needs it — Reality and
-                    Shadowsocks authenticate without a certificate — so it is
-                    optional. Must be DNS-only: none of the three protocols is
-                    HTTP, and a CDN in front breaks all of them.
+  --domain <fqdn>   This node's own domain. AnyTLS, Hysteria2 and TUIC need a
+                    certificate; Reality and Shadowsocks do not. Use DNS-only
+                    records: these proxy endpoints cannot use an HTTP CDN.
   --email <addr>    Let's Encrypt contact address (default admin@<domain>).
   --cf-token <tok>  Cloudflare API token, to validate over DNS-01 when port 80
                     is not reachable.
@@ -194,7 +193,7 @@ if [ "$ACTION" != upgrade ]; then
     ask PANEL "Panel URL (https://panel.example.com)"
     ask TOKEN "Join token"
     if [ -z "$DOMAIN" ] && [ -t 0 ]; then
-        printf "  This node's domain (blank to skip AnyTLS): "
+        printf "  Node domain (required for AnyTLS/Hysteria2/TUIC; otherwise blank): "
         read -r DOMAIN
     fi
     [ -n "$DOMAIN" ] && [ -z "$EMAIL" ] && EMAIL="admin@$DOMAIN"
@@ -215,11 +214,11 @@ if [ -n "$DOMAIN" ]; then
     PUBLIC_IP=$(curl -fsS --max-time 10 https://api.ipify.org || echo "")
     RESOLVED=$( (dig +short "$DOMAIN" A @1.1.1.1 || true) | tail -1)
     if [ -z "$RESOLVED" ]; then
-        warn "$DOMAIN has no A record; AnyTLS will not get a certificate"
+        warn "$DOMAIN has no A record; check DNS before using AnyTLS/Hysteria2/TUIC"
     elif [ -n "$PUBLIC_IP" ] && [ "$RESOLVED" != "$PUBLIC_IP" ]; then
         warn "$DOMAIN resolves to $RESOLVED but this host is $PUBLIC_IP"
-        warn "if the record is proxied, switch it to DNS only: none of the three"
-        warn "protocols is HTTP, and a CDN in front breaks all of them"
+        warn "if the record is proxied, switch it to DNS only: these proxy"
+        warn "protocols cannot use an HTTP CDN"
     else
         ok "$DOMAIN -> $RESOLVED (this host)"
     fi
@@ -299,9 +298,8 @@ ok "node binary installed"
 
 # ────────────────────────────── certificate ───────────────────────────────
 
-# Only AnyTLS needs one. Reality authenticates with its own key pair and
-# Shadowsocks 2022 has no TLS layer, so a node without a certificate still
-# serves two of the three protocols.
+# AnyTLS, Hysteria2 and TUIC need a certificate. Reality uses its own key pair;
+# Shadowsocks 2022 has no TLS layer.
 if [ -n "$DOMAIN" ] && [ "$SKIP_CERT" = 0 ]; then
     say "certificate for $DOMAIN"
     command -v certbot >/dev/null || apt-get install -y -qq certbot
