@@ -218,8 +218,19 @@ func start(t *testing.T, p *fakePanel, e Engine) *Client {
 		t.Fatalf("new client: %v", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-	go c.Run(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		c.Run(ctx)
+	}()
+	t.Cleanup(func() {
+		cancel()
+		select {
+		case <-done:
+		case <-time.After(5 * time.Second):
+			t.Error("control client did not stop")
+		}
+	})
 	return c
 }
 
@@ -373,7 +384,8 @@ func TestReconnectsAndSaysHelloAgain(t *testing.T) {
 func TestStatsAndOnlineAreReported(t *testing.T) {
 	// The production intervals are 30s, which is far too long for a test. They
 	// are package-level so a test can shorten them; nothing else writes to them.
-	defer restore(statsEvery, onlineEvery)
+	stats, online := statsEvery, onlineEvery
+	t.Cleanup(func() { restore(stats, online) })
 	setIntervals(50*time.Millisecond, 50*time.Millisecond)
 
 	p := newFakePanel(t)
@@ -419,7 +431,8 @@ func (e *engineError) Error() string { return e.msg }
 // Anything the node drops here is traffic nobody is billed for, and there is no
 // later opportunity to notice.
 func TestStatsBaselineAdvancesOnlyOnSuccess(t *testing.T) {
-	defer restore(statsEvery, onlineEvery)
+	stats, online := statsEvery, onlineEvery
+	t.Cleanup(func() { restore(stats, online) })
 	setIntervals(40*time.Millisecond, time.Hour)
 
 	p := newFakePanel(t)

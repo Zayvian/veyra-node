@@ -256,7 +256,15 @@ func (c *Client) session(ctx context.Context) error {
 	}
 	c.log.Info("control channel up", "panel", c.cfg.PanelURL)
 
-	go c.report(ctx)
+	reportDone := make(chan struct{})
+	go func() {
+		defer close(reportDone)
+		c.report(ctx)
+	}()
+	defer func() {
+		cancel()
+		<-reportDone
+	}()
 
 	for {
 		readCtx, readCancel := context.WithTimeout(ctx, readTimeout)
