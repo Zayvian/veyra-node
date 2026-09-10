@@ -1,6 +1,6 @@
 # skysbx-node
 
-由 **zayvian-lee** 维护的 skysbx 节点程序。每台代理服务器安装一份，主动连接面板，接收配置、更新用户、运行代理并上报流量。
+由 **kosje** 开发，我二次开发的 skysbx 节点程序。每台代理服务器安装一份，主动连接面板，接收配置、更新用户、运行代理并上报流量。
 
 [![Node CI](https://github.com/zayvian-lee/skysbx-node/actions/workflows/ci.yml/badge.svg)](https://github.com/zayvian-lee/skysbx-node/actions/workflows/ci.yml)
 
