@@ -17,6 +17,9 @@ SRC_DIR=""
 FORK_DIR=""
 GH_TOKEN=${GITHUB_TOKEN:-}
 GH_OWNER=${SKYSBX_GH_OWNER:-zayvian-lee}
+# Kept for compatibility with the original one-line installer. When set, this
+# is a full Git URL for the patched core; otherwise it follows GH_OWNER.
+CORE_REPO=${SKYSBX_FORK:-skysbx-core}
 REF=${SKYSBX_REF:-main}
 
 RED=$'\e[31m'; GRN=$'\e[32m'; YLW=$'\e[33m'; BLD=$'\e[1m'; RST=$'\e[0m'
@@ -30,6 +33,8 @@ ACTION=install
 usage() {
     cat <<EOF
 Usage: sudo ./install-node.sh [--panel <url> --token <token>] [options]
+
+Run it with no install options in a terminal for the guided setup.
 
 Actions (default: install)
   --version         What is installed, including the sing-box it embeds.
@@ -186,17 +191,41 @@ ask() { # ask <var> <prompt>
     [ -n "${!__var}" ] || die "$__prompt is required"
 }
 
+ask_secret() { # ask_secret <var> <prompt>
+    local __var=$1 __prompt=$2 __reply=""
+    [ -n "${!__var}" ] && return 0
+    [ -t 0 ] || die "$__prompt is required (no terminal to ask on)"
+    printf '  %s: ' "$__prompt"
+    stty -echo
+    if ! read -r __reply; then
+        stty echo
+        printf '\n'
+        die "$__prompt is required"
+    fi
+    stty echo
+    printf '\n'
+    printf -v "$__var" '%s' "$__reply"
+    [ -n "${!__var}" ] || die "$__prompt is required"
+}
+
 # An upgrade already knows all of this: it read the panel URL and token out of
 # node.env, and the certificate is certbot's business, not this run's.
 if [ "$ACTION" != upgrade ]; then
     say "node configuration"
     ask PANEL "Panel URL (https://panel.example.com)"
-    ask TOKEN "Join token"
+    ask_secret TOKEN "Join token (input hidden)"
     if [ -z "$DOMAIN" ] && [ -t 0 ]; then
         printf "  Node domain (required for AnyTLS/Hysteria2/TUIC; otherwise blank): "
         read -r DOMAIN
     fi
-    [ -n "$DOMAIN" ] && [ -z "$EMAIL" ] && EMAIL="admin@$DOMAIN"
+    if [ -n "$DOMAIN" ] && [ -z "$EMAIL" ]; then
+        DEFAULT_EMAIL="admin@$DOMAIN"
+        if [ -t 0 ]; then
+            printf "  Let's Encrypt contact email [%s]: " "$DEFAULT_EMAIL"
+            read -r EMAIL
+        fi
+        EMAIL=${EMAIL:-$DEFAULT_EMAIL}
+    fi
 fi
 
 # ─────────────────────────────── preflight ────────────────────────────────
@@ -235,9 +264,19 @@ install -d -m 0700 "$ROOT"
 BUILD=$ROOT/build
 mkdir -p "$BUILD"
 
-fetch() { # fetch <repo> <dest>
-    local repo=$1 dest=$2
-    local url="https://github.com/${GH_OWNER}/${repo}.git"
+fetch() { # fetch <repo-name-or-url> <dest>
+    local repo=$1 dest=$2 url label
+    case "$repo" in
+        http://*|https://*|ssh://*|git@*)
+            url=$repo
+            label=${repo##*/}
+            label=${label%.git}
+            ;;
+        *)
+            url="https://github.com/${GH_OWNER}/${repo}.git"
+            label=$repo
+            ;;
+    esac
     rm -rf "$dest"
     # The token goes in a per-command header, not in the URL: git writes the
     # remote URL into the clone's .git/config, and a token in it would sit on
@@ -251,7 +290,7 @@ fetch() { # fetch <repo> <dest>
         git clone -q --branch "$REF" --depth 1 "$url" "$dest" \
             || die "cannot clone ${GH_OWNER}/${repo} (a private repo needs GITHUB_TOKEN)"
     fi
-    ok "${repo}@$(git -C "$dest" rev-parse --short HEAD)"
+    ok "${label}@$(git -C "$dest" rev-parse --short HEAD)"
 }
 
 say "sources"
@@ -263,7 +302,7 @@ fi
 if [ -n "$FORK_DIR" ]; then
     rm -rf "$BUILD/skysbx-core"; cp -a "$FORK_DIR" "$BUILD/skysbx-core"; ok "using $FORK_DIR"
 else
-    fetch skysbx-core "$BUILD/skysbx-core"
+    fetch "$CORE_REPO" "$BUILD/skysbx-core"
 fi
 
 find "$BUILD" -type f -name '*.sh' -exec sed -i 's/\r$//' {} + 2>/dev/null || true

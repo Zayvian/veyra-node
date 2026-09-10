@@ -1,10 +1,11 @@
 #!/bin/sh
 # One-line installer for a skysbx node.
 #
-#   wget -qO- https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | bash
 #
-# It will ask for the panel URL and the join token. Arguments go through to
-# deploy/install-node.sh after `-s --`:
+# It will ask for the panel URL, join token and optional node domain. Arguments
+# go through to deploy/install-node.sh after `-s --` for unattended install or
+# maintenance:
 #
 #   ... | sh -s -- --panel https://panel.example.com --token <token>
 #   ... | sh -s -- --version      node and sing-box versions
@@ -17,7 +18,6 @@
 set -eu
 
 REPO=${SKYSBX_REPO:-https://github.com/zayvian-lee/skysbx-node.git}
-FORK=${SKYSBX_FORK:-https://github.com/zayvian-lee/skysbx-core.git}
 REF=${SKYSBX_REF:-main}
 
 RED=$(printf '\033[31m'); GRN=$(printf '\033[32m'); RST=$(printf '\033[0m')
@@ -42,8 +42,7 @@ fi
 SRC=$(mktemp -d)
 trap 'rm -rf "$SRC"' EXIT
 
-# Removing something does not need the sources it was built from, and the core
-# is the big clone. Fetch it only when there is going to be a build.
+# Removing something does not need the sources it was built from.
 NEEDS_BUILD=1
 for arg in "$@"; do
     case "$arg" in
@@ -54,14 +53,6 @@ done
 say "fetching $REPO@$REF"
 git clone -q --branch "$REF" --depth 1 "$REPO" "$SRC/skysbx-node" \
     || die "cannot clone $REPO"
-
-# The node links a patched sing-box: hot-swapping an inbound's user set is not
-# in upstream.
-if [ "$NEEDS_BUILD" = 1 ]; then
-    say "fetching $FORK@$REF"
-    git clone -q --branch "$REF" --depth 1 "$FORK" "$SRC/skysbx-core" \
-        || die "cannot clone $FORK"
-fi
 
 # A pipeline leaves stdin pointing at the downloaded script, not the terminal,
 # so the installer would find nothing to prompt on and refuse. Reattach the
@@ -77,7 +68,10 @@ fi
 # which fails on the first line with "Illegal option -o pipefail".
 command -v bash >/dev/null 2>&1 || die "bash is required"
 if [ "$NEEDS_BUILD" = 1 ]; then
-    set -- --src "$SRC/skysbx-node" --fork "$SRC/skysbx-core" "$@"
+    # The deploy script asks for panel credentials before it downloads and
+    # builds the patched core. This keeps the one-line installer interactive
+    # immediately instead of making the operator wait through the big clone.
+    set -- --src "$SRC/skysbx-node" "$@"
 fi
 if ( exec 3>/dev/tty ) 2>/dev/null; then
     exec bash "$SRC/skysbx-node/deploy/install-node.sh" "$@" </dev/tty

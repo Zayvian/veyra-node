@@ -33,18 +33,14 @@
 
 ## 2. 安装节点
 
-在**节点服务器的 SSH 终端**运行 `sudo -i`，再执行，替换域名和邮箱：
+在**节点服务器的 SSH 终端**运行 `sudo -i`，再执行：
 
 ```bash
 apt-get update && apt-get install -y curl
-curl -fL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh -o /tmp/skysbx-node-install.sh
-sh /tmp/skysbx-node-install.sh \
-  --panel https://panel.example.com \
-  --domain hk.example.com \
-  --email you@example.com
+curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | bash
 ```
 
-安装程序提示 token 时粘贴。程序拉取节点与配套 core 源码，使用 Go 1.26.5 构建，签发证书并启动服务。普通使用者不用手动安装 Go 或单独克隆 core。
+按提示输入面板地址、在面板复制的接入 token、节点域名和证书邮箱。token 输入不显示；填写后才下载节点与配套 core 源码、使用 Go 1.26.5 构建、签发证书并启动服务。普通使用者不用手动安装 Go 或单独克隆 core。
 
 **AnyTLS、Hysteria2、TUIC 都需要证书**。只使用 Reality / Shadowsocks 时可省略 `--domain`，交互提示域名时直接回车。安装器允许证书失败后继续启动，所以服务在线不能代替证书检查。
 
@@ -91,7 +87,7 @@ tag 是导出的入站名称，支持中文，例如「香港下载 01」。保�
 
 ```bash
 read -rsp 'Cloudflare DNS API token: ' cf_token; printf '\n'
-sh /tmp/skysbx-node-install.sh \
+curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | bash -s -- \
   --panel https://panel.example.com --domain hk.example.com \
   --email you@example.com --cf-token "$cf_token"
 unset cf_token
@@ -107,7 +103,8 @@ unset cf_token
 install -d -m 0700 /opt/skysbx
 install -m 0644 /你的路径/fullchain.pem /opt/skysbx/cert.pem
 install -m 0600 /你的路径/privkey.pem /opt/skysbx/key.pem
-sh /tmp/skysbx-node-install.sh --panel https://panel.example.com \
+curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | bash -s -- \
+  --panel https://panel.example.com \
   --domain hk.example.com --no-cert
 ```
 
@@ -118,8 +115,7 @@ sh /tmp/skysbx-node-install.sh --panel https://panel.example.com \
 先 [备份当前数据、证书和程序](https://github.com/zayvian-lee/skysbx-panel/blob/main/docs/BACKUP.md)，再在每台节点执行：
 
 ```bash
-curl -fL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh -o /tmp/skysbx-node-install.sh
-sh /tmp/skysbx-node-install.sh --upgrade
+curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | bash -s -- --upgrade
 ```
 
 更新从 `/opt/skysbx/node.env` 读取面板地址、token，不必重新登记节点。它会同时拉取配套内核并重新编译，保留证书，不重复签发。更新会重启节点，建议逐台进行。
@@ -127,10 +123,11 @@ sh /tmp/skysbx-node-install.sh --upgrade
 旧版迁移：先更新面板、再更新节点、最后使用新协议。若曾设置其他下载源环境变量，可显式指定：
 
 ```bash
-SKYSBX_REPO=https://github.com/zayvian-lee/skysbx-node.git \
-SKYSBX_FORK=https://github.com/zayvian-lee/skysbx-core.git \
-SKYSBX_GH_OWNER=zayvian-lee SKYSBX_REF=main \
-sh /tmp/skysbx-node-install.sh --upgrade
+curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | \
+  SKYSBX_REPO=https://github.com/zayvian-lee/skysbx-node.git \
+  SKYSBX_FORK=https://github.com/zayvian-lee/skysbx-core.git \
+  SKYSBX_GH_OWNER=zayvian-lee SKYSBX_REF=main \
+  bash -s -- --upgrade
 ```
 
 自定义目录在每次操作加 `SKYSBX_ROOT=实际目录`；手工或容器部署不要直接覆盖原 unit。`node.env` 丢失要先恢复；证书缺失不会因 `--upgrade` 自动补签。更多迁移、回退和 token 替换见 [维护说明](https://github.com/zayvian-lee/skysbx-panel/blob/main/docs/UPGRADE.md)。
