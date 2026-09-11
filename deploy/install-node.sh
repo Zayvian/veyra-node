@@ -340,6 +340,30 @@ ok "node binary installed"
 # AnyTLS, Hysteria2 and TUIC need a certificate. Reality uses its own key pair;
 # Shadowsocks 2022 has no TLS layer.
 if [ -n "$DOMAIN" ] && [ "$SKIP_CERT" = 0 ]; then
+    # A panel and node may share this host and domain.  The panel's CertMagic
+    # listener already owns :80, so certbot --standalone cannot work here.
+    # Reuse the panel certificate just as the combined installer does.  This
+    # also makes the ordinary node installer safe to use after a panel was
+    # installed first.
+    PANEL_DOMAIN=""
+    if [ -f "$ROOT/panel.env" ]; then
+        PANEL_DOMAIN=$(sed -n 's/^SKYSBX_DOMAIN=//p' "$ROOT/panel.env" | head -1)
+    fi
+    if [ "$PANEL_DOMAIN" = "$DOMAIN" ]; then
+        PANEL_CERT=$(find "$ROOT/certs/certificates" -type f -name "$DOMAIN.crt" -print -quit 2>/dev/null || true)
+        PANEL_KEY=${PANEL_CERT%.crt}.key
+        if [ -n "$PANEL_CERT" ] && [ -f "$PANEL_KEY" ]; then
+            ln -sfn "$PANEL_CERT" "$ROOT/cert.pem"
+            ln -sfn "$PANEL_KEY" "$ROOT/key.pem"
+            ok "reusing the local panel certificate"
+            SKIP_CERT=1
+        else
+            warn "local panel domain matches, but its certificate was not found under $ROOT/certs"
+        fi
+    fi
+fi
+
+if [ -n "$DOMAIN" ] && [ "$SKIP_CERT" = 0 ]; then
     say "certificate for $DOMAIN"
     command -v certbot >/dev/null || apt-get install -y -qq certbot
 
