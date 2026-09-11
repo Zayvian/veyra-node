@@ -42,6 +42,8 @@ curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/instal
 
 按提示输入面板地址、在面板复制的接入 token、节点域名和证书邮箱。token 输入不显示；填写后才下载节点与配套 core 源码、使用 Go 1.26.5 构建、签发证书并启动服务。普通使用者不用手动安装 Go 或单独克隆 core。
 
+面板已在**同一台服务器**运行时，节点域名填面板域名。安装器会自动复用面板现有证书，不申请新证书，也不会占用面板正在使用的 TCP 80。
+
 **AnyTLS、Hysteria2、TUIC 都需要证书**。只使用 Reality / Shadowsocks 时可省略 `--domain`，交互提示域名时直接回车。安装器允许证书失败后继续启动，所以服务在线不能代替证书检查。
 
 ```bash
