@@ -151,7 +151,29 @@ systemctl restart skysbx-node
 | 下载仍扣很多额度 | 面板节点倍率是否保存、客户端是否确实选了这个节点 |
 | 升级失败 | 失败发生在下载、编译还是启动；保留日志，不删除数据 |
 
-`--uninstall` 删除服务和程序，保留 `node.env`、证书；可以 `--upgrade` 重装。`--purge` 会删除数据、证书及相关依赖，不是更新或回退步骤。同机部署共享目录和 Docker，清理前必须确认影响。
+### 只卸载节点程序，保留凭据以便重装
+
+```bash
+curl -4 -fL --retry 3 --connect-timeout 15 \
+  https://raw.githubusercontent.com/Zayvian/veyra-node/main/install.sh \
+  -o /root/veyra-node-install.sh && \
+bash /root/veyra-node-install.sh --uninstall
+```
+
+这会停止并删除 `skysbx-node` 服务和程序，保留 `/opt/skysbx/node.env`、证书及 token。之后运行 `--upgrade` 可以重新装回同一个节点，不需要在面板重新创建节点或更换 token。
+
+### 彻底删除节点
+
+```bash
+curl -4 -fL --retry 3 --connect-timeout 15 \
+  https://raw.githubusercontent.com/Zayvian/veyra-node/main/install.sh \
+  -o /root/veyra-node-install.sh && \
+bash /root/veyra-node-install.sh --purge
+```
+
+这会删除节点服务、程序、`node.env`、节点证书、证书续签钩子与安装器的构建缓存；节点随即离线。脚本仅在确认 Docker 是由它安装时才会删除 Docker。`curl`、`git`、`nftables`、`certbot` 等共享系统组件会保留，因此不需要为了卸载 Veyra 而重装 VPS。
+
+面板和节点同机时，先执行本节的 Node `--purge`，确认节点服务已经移除，再在 [Panel 卸载章节](https://github.com/Zayvian/veyra-panel#8-卸载彻底清理与重装)执行 Panel `--purge`。不要将 `--purge` 用于升级或迁移。
 
 ## 开发者构建
 
