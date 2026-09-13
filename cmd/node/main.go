@@ -16,8 +16,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/zayvian-lee/veyra-node/internal/engine"
-	"github.com/zayvian-lee/veyra-node/internal/link"
+	"github.com/Zayvian/veyra-node/internal/engine"
+	"github.com/Zayvian/veyra-node/internal/link"
 	"github.com/sagernet/sing-box/common/porthop"
 )
 

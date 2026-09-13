@@ -1,4 +1,4 @@
-module github.com/zayvian-lee/veyra-node
+module github.com/Zayvian/veyra-node
 
 go 1.26.5
 

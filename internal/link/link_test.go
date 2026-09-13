@@ -13,7 +13,7 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/zayvian-lee/veyra-node/internal/proto"
+	"github.com/Zayvian/veyra-node/internal/proto"
 )
 
 // fakeEngine records what the control channel asked the data plane to do, and

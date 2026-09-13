@@ -15,7 +15,7 @@ jobs:
           path: veyra-node
       - uses: actions/checkout@v4
         with:
-          repository: zayvian-lee/veyra-core
+          repository: Zayvian/veyra-core
           path: veyra-core
       - uses: actions/setup-go@v5
         with:

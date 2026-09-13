@@ -1,7 +1,7 @@
 #!/bin/sh
 # One-line installer for a Veyra Node.
 #
-#   curl -fsSL https://raw.githubusercontent.com/zayvian-lee/veyra-node/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/Zayvian/veyra-node/main/install.sh | bash
 #
 # It will ask for the panel URL, join token and optional node domain. Arguments
 # go through to deploy/install-node.sh after `-s --` for unattended install or
@@ -17,7 +17,7 @@
 # in deploy/install-node.sh, which is worth reading before running either.
 set -eu
 
-REPO=${VEYRA_REPO:-${SKYSBX_REPO:-https://github.com/zayvian-lee/veyra-node.git}}
+REPO=${VEYRA_REPO:-${SKYSBX_REPO:-https://github.com/Zayvian/veyra-node.git}}
 REF=${VEYRA_REF:-${SKYSBX_REF:-main}}
 
 RED=$(printf '\033[31m'); GRN=$(printf '\033[32m'); RST=$(printf '\033[0m')

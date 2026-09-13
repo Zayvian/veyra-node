@@ -24,7 +24,7 @@ import (
 	singJSON "github.com/sagernet/sing/common/json"
 	"github.com/sagernet/sing/service"
 
-	"github.com/zayvian-lee/veyra-node/internal/proto"
+	"github.com/Zayvian/veyra-node/internal/proto"
 )
 
 type Engine struct {

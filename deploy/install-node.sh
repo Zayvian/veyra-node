@@ -16,7 +16,7 @@ SKIP_CERT=0
 SRC_DIR=""
 FORK_DIR=""
 GH_TOKEN=${GITHUB_TOKEN:-}
-GH_OWNER=${VEYRA_GH_OWNER:-${SKYSBX_GH_OWNER:-zayvian-lee}}
+GH_OWNER=${VEYRA_GH_OWNER:-${SKYSBX_GH_OWNER:-Zayvian}}
 # Kept for compatibility with the original one-line installer. When set, this
 # is a full Git URL for the patched core; otherwise it follows GH_OWNER.
 CORE_REPO=${VEYRA_CORE_REPO:-${SKYSBX_FORK:-veyra-core}}

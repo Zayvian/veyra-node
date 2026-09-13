@@ -11,7 +11,7 @@ import (
 	"github.com/sagernet/sing-box/experimental/v2rayapi"
 	"github.com/sagernet/sing/service"
 
-	"github.com/zayvian-lee/veyra-node/internal/proto"
+	"github.com/Zayvian/veyra-node/internal/proto"
 )
 
 // Counter names sing-box's statistics service uses.
