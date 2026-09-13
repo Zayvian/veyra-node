@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kosje/skysbx-node/internal/proto"
+	"github.com/zayvian-lee/veyra-node/internal/proto"
 	box "github.com/sagernet/sing-box"
 	"github.com/sagernet/sing-box/adapter"
 	"github.com/sagernet/sing-box/include"

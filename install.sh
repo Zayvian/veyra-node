@@ -1,7 +1,7 @@
 #!/bin/sh
-# One-line installer for a skysbx node.
+# One-line installer for a Veyra Node.
 #
-#   curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/zayvian-lee/veyra-node/main/install.sh | bash
 #
 # It will ask for the panel URL, join token and optional node domain. Arguments
 # go through to deploy/install-node.sh after `-s --` for unattended install or
@@ -17,8 +17,8 @@
 # in deploy/install-node.sh, which is worth reading before running either.
 set -eu
 
-REPO=${SKYSBX_REPO:-https://github.com/zayvian-lee/skysbx-node.git}
-REF=${SKYSBX_REF:-main}
+REPO=${VEYRA_REPO:-${SKYSBX_REPO:-https://github.com/zayvian-lee/veyra-node.git}}
+REF=${VEYRA_REF:-${SKYSBX_REF:-main}}
 
 RED=$(printf '\033[31m'); GRN=$(printf '\033[32m'); RST=$(printf '\033[0m')
 say() { printf '%s==>%s %s\n' "$GRN" "$RST" "$*"; }
@@ -51,7 +51,7 @@ for arg in "$@"; do
 done
 
 say "fetching $REPO@$REF"
-git clone -q --branch "$REF" --depth 1 "$REPO" "$SRC/skysbx-node" \
+git clone -q --branch "$REF" --depth 1 "$REPO" "$SRC/veyra-node" \
     || die "cannot clone $REPO"
 
 # A pipeline leaves stdin pointing at the downloaded script, not the terminal,
@@ -71,9 +71,9 @@ if [ "$NEEDS_BUILD" = 1 ]; then
     # The deploy script asks for panel credentials before it downloads and
     # builds the patched core. This keeps the one-line installer interactive
     # immediately instead of making the operator wait through the big clone.
-    set -- --src "$SRC/skysbx-node" "$@"
+    set -- --src "$SRC/veyra-node" "$@"
 fi
 if ( exec 3>/dev/tty ) 2>/dev/null; then
-    exec bash "$SRC/skysbx-node/deploy/install-node.sh" "$@" </dev/tty
+    exec bash "$SRC/veyra-node/deploy/install-node.sh" "$@" </dev/tty
 fi
-exec bash "$SRC/skysbx-node/deploy/install-node.sh" "$@"
+exec bash "$SRC/veyra-node/deploy/install-node.sh" "$@"

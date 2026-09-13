@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Install a skysbx node on a Debian/Ubuntu host and point it at a panel.
+# Install a Veyra Node on a Debian/Ubuntu host and point it at a panel.
 #
 #   sudo ./install-node.sh --panel https://panel.example.com --token <token>
 #
 # Re-running upgrades the binary in place.
 set -euo pipefail
 
-ROOT=${SKYSBX_ROOT:-/opt/skysbx}
+ROOT=${VEYRA_ROOT:-${SKYSBX_ROOT:-/opt/skysbx}}
 PANEL=""
 TOKEN=""
 DOMAIN=""
@@ -16,11 +16,11 @@ SKIP_CERT=0
 SRC_DIR=""
 FORK_DIR=""
 GH_TOKEN=${GITHUB_TOKEN:-}
-GH_OWNER=${SKYSBX_GH_OWNER:-zayvian-lee}
+GH_OWNER=${VEYRA_GH_OWNER:-${SKYSBX_GH_OWNER:-zayvian-lee}}
 # Kept for compatibility with the original one-line installer. When set, this
 # is a full Git URL for the patched core; otherwise it follows GH_OWNER.
-CORE_REPO=${SKYSBX_FORK:-skysbx-core}
-REF=${SKYSBX_REF:-main}
+CORE_REPO=${VEYRA_CORE_REPO:-${SKYSBX_FORK:-veyra-core}}
+REF=${VEYRA_REF:-${SKYSBX_REF:-main}}
 
 RED=$'\e[31m'; GRN=$'\e[32m'; YLW=$'\e[33m'; BLD=$'\e[1m'; RST=$'\e[0m'
 say()  { printf '%s==>%s %s\n' "$BLD" "$RST" "$*"; }
@@ -96,7 +96,7 @@ if [ "$ACTION" = version ]; then
         systemctl is-active --quiet skysbx-node \
             && printf 'service    running\n' || printf 'service    not running\n'
     else
-        printf 'skysbx-node is not installed at %s\n' "$ROOT"
+        printf 'Veyra Node is not installed at %s\n' "$ROOT"
     fi
     exit 0
 fi
@@ -109,7 +109,7 @@ if [ "$ACTION" = uninstall ] || [ "$ACTION" = purge ]; then
     rm -f /etc/systemd/system/skysbx-node.service
     systemctl daemon-reload 2>/dev/null || true
     systemctl reset-failed 2>/dev/null || true
-    ok "skysbx-node stopped and removed"
+    ok "Veyra Node stopped and removed"
 
     rm -f "$ROOT/skysbx-node"
     # The build tree is this installer's scratch space, not data: it is a fresh
@@ -164,7 +164,7 @@ if [ "$ACTION" = uninstall ] || [ "$ACTION" = purge ]; then
         (ls -A "$ROOT" 2>/dev/null || true) | sed 's/^/       /'
     fi
 
-    printf '\n%sskysbx node removed.%s\n' "$GRN" "$RST"
+    printf '\n%sVeyra Node removed.%s\n' "$GRN" "$RST"
     [ "$ACTION" = uninstall ] && printf \
         'The certificate and %s/node.env were kept; --purge removes those too.\n' "$ROOT"
     exit 0
@@ -295,14 +295,14 @@ fetch() { # fetch <repo-name-or-url> <dest>
 
 say "sources"
 if [ -n "$SRC_DIR" ]; then
-    rm -rf "$BUILD/skysbx-node"; cp -a "$SRC_DIR" "$BUILD/skysbx-node"; ok "using $SRC_DIR"
+    rm -rf "$BUILD/veyra-node"; cp -a "$SRC_DIR" "$BUILD/veyra-node"; ok "using $SRC_DIR"
 else
-    fetch skysbx-node "$BUILD/skysbx-node"
+    fetch veyra-node "$BUILD/veyra-node"
 fi
 if [ -n "$FORK_DIR" ]; then
-    rm -rf "$BUILD/skysbx-core"; cp -a "$FORK_DIR" "$BUILD/skysbx-core"; ok "using $FORK_DIR"
+    rm -rf "$BUILD/veyra-core"; cp -a "$FORK_DIR" "$BUILD/veyra-core"; ok "using $FORK_DIR"
 else
-    fetch "$CORE_REPO" "$BUILD/skysbx-core"
+    fetch "$CORE_REPO" "$BUILD/veyra-core"
 fi
 
 find "$BUILD" -type f -name '*.sh' -exec sed -i 's/\r$//' {} + 2>/dev/null || true
@@ -317,22 +317,22 @@ fi
 
 # Stamped into the binary so `--version` can answer what is running without
 # anyone reading a build log.
-VER=$(git -C "$BUILD/skysbx-node" rev-parse --short HEAD 2>/dev/null || echo unknown)
+VER=$(git -C "$BUILD/veyra-node" rev-parse --short HEAD 2>/dev/null || echo unknown)
 
 say "building"
 # The build tags are not optional: without them the binary compiles but exits at
 # startup on "clash api is not included in this build". Go must be 1.26.x —
 # 1.27 fails to link, because sing-box reaches an unexported http2 field through
 # go:linkname.
-docker run --rm -v "$BUILD:/src" -w /src/skysbx-node \
+docker run --rm -v "$BUILD:/src" -w /src/veyra-node \
     -e GOFLAGS=-buildvcs=false -e CGO_ENABLED=0 -e GOOS=linux \
     golang:1.26.5 \
     go build -trimpath \
         -tags 'with_clash_api,with_v2ray_api,with_utls,with_acme,with_quic' \
         -ldflags "-s -w -X main.version=$VER \
                   -X github.com/sagernet/sing-box/constant.Version=1.14.0" \
-        -o /src/skysbx-node/skysbx-node ./cmd/node
-install -m 0755 "$BUILD/skysbx-node/skysbx-node" "$ROOT/skysbx-node"
+        -o /src/veyra-node/skysbx-node ./cmd/node
+install -m 0755 "$BUILD/veyra-node/skysbx-node" "$ROOT/skysbx-node"
 ok "node binary installed"
 
 # ────────────────────────────── certificate ───────────────────────────────
@@ -418,7 +418,7 @@ chmod 600 "$ROOT/node.env"
 
 cat > /etc/systemd/system/skysbx-node.service <<EOF
 [Unit]
-Description=skysbx node (embedded sing-box data plane)
+Description=Veyra Node (embedded sing-box data plane)
 After=network-online.target
 Wants=network-online.target
 
@@ -459,7 +459,7 @@ fi
 
 cat <<EOF
 
-${GRN}skysbx node
+${GRN}Veyra Node
 ==========
 Panel     ${PANEL}
 $([ -n "$DOMAIN" ] && echo "Domain    ${DOMAIN}")

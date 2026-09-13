@@ -1,10 +1,10 @@
-# skysbx-node
+# Veyra Node
 
-由 **kosje** 开发，我二次开发的 skysbx 节点程序。每台代理服务器安装一份，主动连接面板，接收配置、更新用户、运行代理并上报流量。
+Veyra 的节点程序。每台代理服务器安装一份，主动连接面板，接收配置、更新用户、运行代理并上报流量。
 
-[![Node CI](https://github.com/zayvian-lee/skysbx-node/actions/workflows/ci.yml/badge.svg)](https://github.com/zayvian-lee/skysbx-node/actions/workflows/ci.yml)
+[![Node CI](https://github.com/zayvian-lee/veyra-node/actions/workflows/ci.yml/badge.svg)](https://github.com/zayvian-lee/veyra-node/actions/workflows/ci.yml)
 
-**新用户先安装 [skysbx-panel](https://github.com/zayvian-lee/skysbx-panel)，再按本页安装节点。** [skysbx-core](https://github.com/zayvian-lee/skysbx-core) 已编译进节点，不单独启动或安装。
+**新用户先安装 [Veyra Panel](https://github.com/zayvian-lee/veyra-panel)，再按本页安装节点。** [Veyra Core](https://github.com/zayvian-lee/veyra-core) 已编译进节点，不单独启动或安装。
 
 ## 功能与部署条件
 
@@ -16,7 +16,7 @@
 - 节点域名指向本机，使用直连 DNS，Cloudflare 为灰云。
 - 默认节点证书签发需要可达且空闲的 TCP 80；不能提供时看「证书选项」。
 - 代理端口同时在云安全组和本机防火墙放行。
-- 面板、节点同机时请使用 [同机安装流程](https://github.com/zayvian-lee/skysbx-panel#6-面板与节点同机安装)，避免与面板抢占 80/443。
+- 面板、节点同机时请使用 [同机安装流程](https://github.com/zayvian-lee/veyra-panel#6-面板与节点同机安装)，避免与面板抢占 80/443。
 
 ## 1. 从面板取得 token
 
@@ -37,7 +37,7 @@
 
 ```bash
 apt-get update && apt-get install -y curl
-curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/zayvian-lee/veyra-node/main/install.sh | bash
 ```
 
 按提示输入面板地址、在面板复制的接入 token、节点域名和证书邮箱。token 输入不显示；填写后才下载节点与配套 core 源码、使用 Go 1.26.5 构建、签发证书并启动服务。普通使用者不用手动安装 Go 或单独克隆 core。
@@ -69,7 +69,7 @@ ls -l /opt/skysbx/cert.pem /opt/skysbx/key.pem
 
 证书默认 `/opt/skysbx/cert.pem`，私钥默认 `/opt/skysbx/key.pem`，SNI 填匹配的节点域名。普通直连时中转设置留空。放行实际配置的 TCP / UDP 端口，不要把示例端口当成固定要求。
 
-tag 是导出的入站名称，支持中文，例如「香港下载 01」。保存后确认生效；再在面板创建用户、分配入站、复制订阅并导入客户端。完整客户端与套餐操作见 [面板 README](https://github.com/zayvian-lee/skysbx-panel#5-用户倍率和订阅)。
+tag 是导出的入站名称，支持中文，例如「香港下载 01」。保存后确认生效；再在面板创建用户、分配入站、复制订阅并导入客户端。完整客户端与套餐操作见 [面板 README](https://github.com/zayvian-lee/veyra-panel#5-用户倍率和订阅)。
 
 ### HY2 跳端口示例
 
@@ -89,7 +89,7 @@ tag 是导出的入站名称，支持中文，例如「香港下载 01」。保�
 
 ```bash
 read -rsp 'Cloudflare DNS API token: ' cf_token; printf '\n'
-curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | bash -s -- \
+curl -fsSL https://raw.githubusercontent.com/zayvian-lee/veyra-node/main/install.sh | bash -s -- \
   --panel https://panel.example.com --domain hk.example.com \
   --email you@example.com --cf-token "$cf_token"
 unset cf_token
@@ -105,7 +105,7 @@ unset cf_token
 install -d -m 0700 /opt/skysbx
 install -m 0644 /你的路径/fullchain.pem /opt/skysbx/cert.pem
 install -m 0600 /你的路径/privkey.pem /opt/skysbx/key.pem
-curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | bash -s -- \
+curl -fsSL https://raw.githubusercontent.com/zayvian-lee/veyra-node/main/install.sh | bash -s -- \
   --panel https://panel.example.com \
   --domain hk.example.com --no-cert
 ```
@@ -114,10 +114,10 @@ curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/instal
 
 ## 4. 更新节点与内核
 
-先 [备份当前数据、证书和程序](https://github.com/zayvian-lee/skysbx-panel/blob/main/docs/BACKUP.md)，再在每台节点执行：
+先 [备份当前数据、证书和程序](https://github.com/zayvian-lee/veyra-panel/blob/main/docs/BACKUP.md)，再在每台节点执行：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | bash -s -- --upgrade
+curl -fsSL https://raw.githubusercontent.com/zayvian-lee/veyra-node/main/install.sh | bash -s -- --upgrade
 ```
 
 更新从 `/opt/skysbx/node.env` 读取面板地址、token，不必重新登记节点。它会同时拉取配套内核并重新编译，保留证书，不重复签发。更新会重启节点，建议逐台进行。
@@ -125,14 +125,14 @@ curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/instal
 旧版迁移：先更新面板、再更新节点、最后使用新协议。若曾设置其他下载源环境变量，可显式指定：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zayvian-lee/skysbx-node/main/install.sh | \
-  SKYSBX_REPO=https://github.com/zayvian-lee/skysbx-node.git \
-  SKYSBX_FORK=https://github.com/zayvian-lee/skysbx-core.git \
-  SKYSBX_GH_OWNER=zayvian-lee SKYSBX_REF=main \
+curl -fsSL https://raw.githubusercontent.com/zayvian-lee/veyra-node/main/install.sh | \
+  VEYRA_REPO=https://github.com/zayvian-lee/veyra-node.git \
+  VEYRA_CORE_REPO=https://github.com/zayvian-lee/veyra-core.git \
+  VEYRA_GH_OWNER=zayvian-lee VEYRA_REF=main \
   bash -s -- --upgrade
 ```
 
-自定义目录在每次操作加 `SKYSBX_ROOT=实际目录`；手工或容器部署不要直接覆盖原 unit。`node.env` 丢失要先恢复；证书缺失不会因 `--upgrade` 自动补签。更多迁移、回退和 token 替换见 [维护说明](https://github.com/zayvian-lee/skysbx-panel/blob/main/docs/UPGRADE.md)。
+自定义目录在每次操作加 `VEYRA_ROOT=实际目录`；旧的 `SKYSBX_ROOT` 仍兼容。手工或容器部署不要直接覆盖原 unit。`node.env` 丢失要先恢复；证书缺失不会因 `--upgrade` 自动补签。更多迁移、回退和 token 替换见 [维护说明](https://github.com/zayvian-lee/veyra-panel/blob/main/docs/UPGRADE.md)。
 
 ## 5. 日常管理与卸载
 
@@ -158,20 +158,20 @@ systemctl restart skysbx-node
 普通用户使用上面的安装器。开发者需把节点和 core 克隆为同级目录：
 
 ```bash
-git clone https://github.com/zayvian-lee/skysbx-node.git
-git clone https://github.com/zayvian-lee/skysbx-core.git
-cd skysbx-node
+git clone https://github.com/zayvian-lee/veyra-node.git
+git clone https://github.com/zayvian-lee/veyra-core.git
+cd veyra-node
 # 使用 Go 1.26.5；-race 检测还需要 C 编译器
 go test -race -tags 'with_clash_api,with_v2ray_api,with_utls,with_acme,with_quic' ./...
 CGO_ENABLED=0 go build -trimpath \
   -tags 'with_clash_api,with_v2ray_api,with_utls,with_acme,with_quic' \
-  -o skysbx-node ./cmd/node
+  -o veyra-node ./cmd/node
 ```
 
 保留 go.mod 中 core 和 sing-quic 的本地 replace 指令；省略构建标签可能导致功能缺失。不要随意把配套 core 替换为其他内核版本。
 
 ## 项目维护
 
-[提交问题](https://github.com/zayvian-lee/skysbx-node/issues)时附程序版本、协议、部署方式和脱敏日志。测试覆盖真实 QUIC 连接、用户热更新、撤销、流量归属与 Linux 构建；实际服务器证书/网络需自行验收。
+[提交问题](https://github.com/zayvian-lee/veyra-node/issues)时附程序版本、协议、部署方式和脱敏日志。测试覆盖真实 QUIC 连接、用户热更新、撤销、流量归属与 Linux 构建；实际服务器证书/网络需自行验收。
 
 许可证与来源见 [LICENSE](LICENSE)、[NOTICE](NOTICE)。

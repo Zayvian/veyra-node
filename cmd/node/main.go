@@ -1,4 +1,4 @@
-// Command node runs a skysbx data plane: it dials its panel, applies whatever
+// Command node runs a Veyra data plane: it dials its panel, applies whatever
 // configuration it is given, and reports traffic back.
 //
 // It has no configuration file and no listening control port. Everything it
@@ -16,8 +16,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/kosje/skysbx-node/internal/engine"
-	"github.com/kosje/skysbx-node/internal/link"
+	"github.com/zayvian-lee/veyra-node/internal/engine"
+	"github.com/zayvian-lee/veyra-node/internal/link"
 	"github.com/sagernet/sing-box/common/porthop"
 )
 
@@ -37,7 +37,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Printf("skysbx-node %s (sing-box %s)\n", version, engine.New(nil).SingboxVersion())
+		fmt.Printf("veyra-node %s (sing-box %s)\n", version, engine.New(nil).SingboxVersion())
 		return
 	}
 

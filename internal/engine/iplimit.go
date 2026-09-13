@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kosje/skysbx-node/internal/proto"
+	"github.com/zayvian-lee/veyra-node/internal/proto"
 )
 
 // A shared subscription is worth nothing to the person paying for it if fifty

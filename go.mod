@@ -1,4 +1,4 @@
-module github.com/kosje/skysbx-node
+module github.com/zayvian-lee/veyra-node
 
 go 1.26.5
 
@@ -185,6 +185,6 @@ require (
 // The hot-swap patches live in a fork; sing-box upstream builds an inbound's
 // user set once and never exposes a way to change it. Point this at a published
 // module before release.
-replace github.com/sagernet/sing-box => ../skysbx-core
+replace github.com/sagernet/sing-box => ../veyra-core
 
-replace github.com/sagernet/sing-quic => ../skysbx-core/third_party/sing-quic
+replace github.com/sagernet/sing-quic => ../veyra-core/third_party/sing-quic

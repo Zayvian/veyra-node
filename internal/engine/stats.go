@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kosje/skysbx-node/internal/proto"
+	"github.com/zayvian-lee/veyra-node/internal/proto"
 )
 
 // counters turns sing-box's cumulative per-user totals into the deltas the
