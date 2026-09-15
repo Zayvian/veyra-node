@@ -122,6 +122,8 @@ curl -fsSL https://raw.githubusercontent.com/Zayvian/veyra-node/main/install.sh 
 
 更新从 `/opt/skysbx/node.env` 读取面板地址、token，不必重新登记节点。它会同时拉取配套内核并重新编译，保留证书，不重复签发。更新会重启节点，建议逐台进行。
 
+安装或更新完成后，输入 `veyra` 可打开交互式管理菜单，进行状态查看、升级、重启、日志查看和卸载；Node token 不会显示在菜单中。
+
 旧版迁移：先更新面板、再更新节点、最后使用新协议。若曾设置其他下载源环境变量，可显式指定：
 
 ```bash

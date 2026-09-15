@@ -117,6 +117,11 @@ if [ "$ACTION" = uninstall ] || [ "$ACTION" = purge ]; then
     rm -rf "$ROOT/build/skysbx-node" "$ROOT/build/skysbx-core"
     ok "binary and build cache removed"
 
+    # Keep the shared command if the panel is still installed on this host.
+    if [ ! -f /etc/systemd/system/skysbx-panel.service ] && [ ! -x "$ROOT/skysbx-panel" ]; then
+        rm -f /usr/local/bin/veyra
+    fi
+
     if [ "$ACTION" = purge ]; then
         say "purging"
         # Read the domain back before deleting the hook that names it.
@@ -449,6 +454,8 @@ systemctl enable -q skysbx-node
 # restart, not `enable --now`: on an upgrade the binary has just been replaced
 # and --now would leave the old process running.
 systemctl restart skysbx-node
+install -m 0755 "$BUILD/veyra-node/deploy/veyra-menu.sh" /usr/local/bin/veyra
+ok "management command installed: veyra"
 sleep 5
 
 if systemctl is-active --quiet skysbx-node; then

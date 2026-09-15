@@ -24,6 +24,6 @@ jobs:
       - working-directory: veyra-node
         run: go test -race -tags 'with_clash_api,with_v2ray_api,with_utls,with_acme,with_quic' ./...
       - working-directory: veyra-node
-        run: bash -n deploy/install-node.sh && sh -n install.sh
+        run: bash -n deploy/install-node.sh && bash -n deploy/veyra-menu.sh && sh -n install.sh
       - working-directory: veyra-node
         run: CGO_ENABLED=0 go build -trimpath -tags 'with_clash_api,with_v2ray_api,with_utls,with_acme,with_quic' -o dist/veyra-node ./cmd/node
